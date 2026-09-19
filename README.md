@@ -1,4 +1,4 @@
-# agent-worker
+# agentbloom-runtime-worker
 
 **A minimal, stateless agent runtime.** Feed it a *snapshot* (model + system prompt +
 tools + skills as one JSON contract), it runs the ReAct loop — think → call tools →
@@ -136,8 +136,8 @@ npm test
 ### 构建与部署
 
 ```bash
-docker build --network host -t agent-worker:local .
-docker run --rm -p 8100:8100 agent-worker:local
+docker build --network host -t agentbloom-runtime-worker:local .
+docker run --rm -p 8100:8100 agentbloom-runtime-worker:local
 curl http://127.0.0.1:8100/healthz
 ```
 
