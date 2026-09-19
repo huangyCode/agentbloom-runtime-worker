@@ -1,6 +1,7 @@
 /**
- * 快照 toolSpecs/skills → ToolBus 装配（ToolBus 本体归观山的 toolbus 模块）。
- * 一期支持 HTTP（Extra /invoke）和内置 read_skill，MCP 等通道只保留扩展点。
+ * 快照 toolSpecs/skills → ToolBus 装配。
+ * 插件插槽在这生效：setup 注册的自定义执行器并入 registry，
+ * provideSkillStore 可替换技能对象存储；ToolBus 事件同时喂日志与插件 Observer。
  */
 import {
   BuiltinToolExecutor,
@@ -18,6 +19,7 @@ import type {
   RunIdentity,
   Snapshot,
 } from "../protocol/types.ts";
+import type { PluginHost, PluginRun } from "../plugin/host.ts";
 import { logToolBusEvent } from "../common/log.ts";
 import { getSkillObject } from "../common/objectstore.ts";
 
@@ -25,6 +27,7 @@ export function buildTools(
   snapshot: Snapshot,
   identity: RunIdentity,
   permissionMode: PermissionMode,
+  host: PluginHost,
 ) {
   const toolBusConfig = loadToolBusConfig();
   const rawSpecs = snapshot.toolSpecs ?? [];
@@ -39,15 +42,27 @@ export function buildTools(
 
   const registry = new ToolExecutorRegistry();
   registry.register(new HttpToolExecutor());
-  // 对象存储在装配处注入，toolbus 不感知 MinIO SDK，保持可单测。
+  // 对象存储在装配处注入，toolbus 不感知 SDK；插件可整体替换存储实现。
   if (skills.length > 0) {
-    registry.register(new BuiltinToolExecutor(skills, { getSkillObject }));
+    registry.register(
+      new BuiltinToolExecutor(skills, host.skillStore ?? { getSkillObject }),
+    );
+  }
+  for (const executor of host.extraExecutors) {
+    registry.register(executor);
   }
 
+  // ToolBus 事件双路：结构化日志照旧;运行开始后另发一份给插件 Observer 泳道。
+  let activeRun: PluginRun | undefined;
   const toolBus = new DefaultToolBus({
     registry,
     config: toolBusConfig,
-    eventSink: { emit: logToolBusEvent },
+    eventSink: {
+      emit: (event) => {
+        logToolBusEvent(event);
+        activeRun?.dispatchEvent(`toolbus_${event.type}`, event);
+      },
+    },
   });
   const runContext = {
     runId: identity.runId,
@@ -60,5 +75,9 @@ export function buildTools(
     tools: definitions.map((definition) =>
       toPiTool(definition, toolBus, runContext),
     ),
+    /** run(signal) 建好 PluginRun 后回填，让 ToolBus 事件找到 Observer。 */
+    makeToolContext: (pluginRun: PluginRun) => {
+      activeRun = pluginRun;
+    },
   };
 }

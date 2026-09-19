@@ -9,12 +9,17 @@
 import http from "node:http";
 import { randomUUID } from "node:crypto";
 import { buildRun } from "../service/run.ts";
+import { PluginHost } from "../plugin/host.ts";
+import { contextTrimmer, roundBudget, thinkingPolicy } from "../plugin/builtin/index.ts";
 import { mapEvent, chunkLine } from "../protocol/openai.ts";
 import { readBody, writeSseHead, startHeartbeat } from "./sse.ts";
 
 const PORT = Number(process.env.PORT ?? 8100);
 const MAX_CONCURRENCY = Number(process.env.MAX_CONCURRENCY ?? 8);
 const running = new Set<string>();
+
+// 插件注册处:数组序 = 拦截链序。自定义插件加在这里(或未来做成配置加载)。
+const host = new PluginHost([thinkingPolicy, contextTrimmer, roundBudget]);
 
 const server = http.createServer(async (req, res) => {
   if (req.method === "GET" && req.url === "/healthz") {
@@ -47,9 +52,11 @@ const server = http.createServer(async (req, res) => {
     try {
       const traceHeader = req.headers["x-trace-id"];
       const traceId = Array.isArray(traceHeader) ? traceHeader[0] : traceHeader;
-      const { run } = buildRun(body, { runId: id, traceId });
+      const { run } = buildRun(body, { runId: id, traceId }, host);
       const exposeThinking = body.agent?.thinking?.expose === true;
-      for await (const ev of run(ac.signal)) {
+      const { stream, pluginRun } = run(ac.signal);
+      for await (const ev of stream) {
+        pluginRun.dispatchEvent(ev.type, ev);   // Observer 泳道,隔离异步,不碰 SSE
         const line = mapEvent(ev, id, model, exposeThinking);
         if (line && !res.destroyed) res.write(line);
       }

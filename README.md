@@ -28,6 +28,11 @@ model config, tool execution, context trimming, thinking policy are all injected
   two real-world failure modes of reasoning models (answers swallowed into the
   thinking block; deterministic empty output). Battle-tested against a local
   qwen3:14b via a 20-question regression benchmark.
+- **Pluggable by design** — a two-lane plugin API: *observers* subscribe to every
+  loop/tool event (isolated, can never break a run — persistence, metrics, audit),
+  *interceptors* join the critical path in registration order (approval flows,
+  custom compaction, budgets). The built-in thinking policy, context trimmer and
+  round budget are themselves plugins (<50 lines each). See [docs/PLUGIN.md](./docs/PLUGIN.md).
 - **OpenAI-compatible streaming** — `delta.content` / `delta.reasoning` frames plus a
   small `agent_event` extension for tool-step progress; standard SDKs just work.
 
@@ -70,11 +75,11 @@ src/
 │   ├── run.ts       # buildRun 编排入口：快照+messages → Pi agentLoop
 │   ├── model.ts     # 快照 model → Pi 模型配置（OpenAI 兼容端点的适配坑集中在这）
 │   ├── messages.ts  # 历史消息还原、最后一条 user 切分、上下文压缩
-│   ├── tools.ts     # 快照 toolSpecs/skills → ToolBus 装配
-│   └── thinking.ts  # 思考开关的 stream 包装（按轮定档）
+│   └── tools.ts     # 快照 toolSpecs/skills → ToolBus 装配(插槽在此生效)
 ├── protocol/    # 协议层：纯类型 + 纯函数，不依赖上层
 │   ├── types.ts     # 快照契约类型（对齐 PROTOCOL.md）
 │   └── openai.ts    # Pi AgentEvent → OpenAI chat.completion.chunk（step 走扩展字段）
+├── plugin/      # 插件宿主：两条泳道(Observer/Interceptor)+插槽,内置策略也是插件
 ├── toolbus/     # 领域模块：HTTP/Builtin Executor、错误、重试、幂等、截断
 └── common/      # 公共方法：日志、对象存储
 ```
@@ -114,6 +119,13 @@ MinIO 对象存储（read_skill 懒加载技能正文用，快照内联 content 
 npm run typecheck
 npm test
 ```
+
+### 插件
+
+策略层全部走插件 API：事件订阅(Observer,隔离异步)、关键路径拦截(Interceptor,
+链式+超时)、执行器/存储插槽(setup)。内置的思考按轮定档、上下文裁剪、轮数预算
+就是三个插件范例(`src/plugin/builtin/`,各不到 50 行)。契约、失败语义与示例见
+**[docs/PLUGIN.md](./docs/PLUGIN.md)**;行为由 `test/plugin-host.test.ts` 钉住。
 
 ### 快照契约
 

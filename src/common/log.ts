@@ -8,3 +8,8 @@ export function logToolBusEvent(event: ToolBusEvent): void {
   // 只记录标识和错误码；不记录参数、结果、Token 或密钥。
   console.warn(JSON.stringify({ component: "toolbus", ...event }));
 }
+
+/** 通用结构化日志（插件宿主等使用）。同样纪律：不落参数/结果/密钥。 */
+export function log(fields: Record<string, unknown>): void {
+  console.warn(JSON.stringify(fields));
+}
