@@ -1,0 +1,12 @@
+.git
+.gitlab-ci.yml
+.DS_Store
+node_modules/
+.npm/
+docs/
+examples/
+test/
+*.md
+.env
+.env.*
+npm-debug.log*

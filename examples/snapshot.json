@@ -1,0 +1,77 @@
+{
+  "stream": true,
+  "messages": [
+    {
+      "role": "user",
+      "content": "帮我审查这条变更单：ALTER TABLE ads_daily DROP COLUMN conversions"
+    }
+  ],
+  "agent": {
+    "agentNo": "ag-20260821112416-6ab3f0",
+    "model": {
+      "modelId": "qwen3:14b",
+      "baseUrl": "http://127.0.0.1:11434/v1",
+      "apiKey": "EMPTY",
+      "contextWindow": 128000,
+      "maxTokens": 4096
+    },
+    "systemPrompt": "你是数据团队的 SQL 审查助手，回答有理有据，不编造数据。\n\n# 可用技能\n以下技能与当前任务匹配时，先调用 read_skill 工具（参数 name 填技能名）获取完整规程，再按规程执行。\n- sql_review — 审查 SQL 变更单、评估 DDL 风险时使用",
+    "permissionMode": "auto",
+    "budgets": {
+      "maxRounds": 30
+    },
+    "toolSpecs": [
+      {
+        "name": "sql_query",
+        "description": "只读查询数据仓库（TiDB / MySQL 语法）。可用 SELECT table_name, column_name, column_type FROM information_schema.columns WHERE table_schema = DATABASE() 查看表结构。只允许 SELECT，超时 30s。",
+        "type": "http",
+        "endpoint": "http://127.0.0.1:8200/invoke/sql_query",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "sql": {
+              "type": "string",
+              "description": "只读 SELECT 语句"
+            }
+          },
+          "required": [
+            "sql"
+          ]
+        },
+        "sideEffect": false
+      },
+      {
+        "name": "web_search",
+        "description": "联网搜索，返回前 N 条结果的标题与摘要。",
+        "type": "http",
+        "endpoint": "http://127.0.0.1:8200/invoke/web_search",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "搜索关键词"
+            },
+            "top_n": {
+              "type": "number",
+              "description": "返回条数，默认 3"
+            }
+          },
+          "required": [
+            "query"
+          ]
+        },
+        "sideEffect": false
+      }
+    ],
+    "skills": [
+      {
+        "name": "sql_review",
+        "description": "审查 SQL 变更单、评估 DDL 风险时使用",
+        "version": "v1",
+        "content": "---\nname: sql_review\ndescription: 审查 SQL 变更单、评估 DDL 风险时使用\nversion: v1\n---\n\n# SQL 变更单审查规程\n\n收到 SQL 变更单（DDL/DML）后，按以下步骤执行，不要跳步：\n\n1. **先查现状**：用 sql_query 工具执行\n   `SELECT table_name, column_name, column_type FROM information_schema.columns WHERE table_schema = DATABASE() ORDER BY table_name, ordinal_position`，\n   确认变更涉及的表当前结构；再用一条 SELECT 抽样确认该表/字段确有数据。\n2. **排查影响**：判断被改动的字段是否是常用统计口径（如 conversions 之于 ROI），\n   必要时用 web_search 查该类变更的已知风险与最佳实践。\n3. **输出报告**，固定三段、段首用【】标注：\n   - 【风险等级】高 / 中 / 低，一句话定性；\n   - 【依据】列出第 1、2 步查到的事实（表结构、数据量级、下游依赖、检索到的实践）；\n   - 【建议】给出可执行的替代方案或上线窗口建议。\n\n红线：破坏性变更（DROP TABLE / DROP COLUMN / TRUNCATE）一律不低于【中】风险；\n涉及统计口径字段的删除一律【高】风险。\n",
+        "hasScript": false
+      }
+    ]
+  }
+}
