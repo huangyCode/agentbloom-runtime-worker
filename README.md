@@ -79,7 +79,7 @@ src/
 ├── protocol/    # 协议层：纯类型 + 纯函数，不依赖上层
 │   ├── types.ts     # 快照契约类型（对齐 PROTOCOL.md）
 │   └── openai.ts    # Pi AgentEvent → OpenAI chat.completion.chunk（step 走扩展字段）
-├── plugin/      # 插件宿主：两条泳道(Observer/Interceptor)+插槽,内置策略也是插件
+├── plugin/      # 插件宿主：观察者/拦截器两类钩子+插槽,内置策略也是插件
 ├── toolbus/     # 领域模块：HTTP/Builtin Executor、错误、重试、幂等、截断
 └── common/      # 公共方法：日志、对象存储
 ```

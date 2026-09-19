@@ -52,7 +52,7 @@ export function buildTools(
     registry.register(executor);
   }
 
-  // ToolBus 事件双路：结构化日志照旧;运行开始后另发一份给插件 Observer 泳道。
+  // ToolBus 事件双路：结构化日志照旧;运行开始后另发一份给插件 Observer 观察者。
   let activeRun: PluginRun | undefined;
   const toolBus = new DefaultToolBus({
     registry,

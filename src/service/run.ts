@@ -2,7 +2,7 @@
  * 一次运行的编排入口：把请求体拆成快照和消息，
  * 组装模型/工具/历史，接上插件宿主，交给 Pi 的 agentLoop。
  * worker 无状态、不查库——所有输入都来自请求体；策略（思考定档/
- * 上下文裁剪/轮数预算）全部走插件泳道，本文件只做接线。
+ * 上下文裁剪/轮数预算）全部走插件钩子，本文件只做接线。
  */
 import { agentLoop } from "@earendil-works/pi-agent-core";
 import { streamSimple } from "@earendil-works/pi-ai/compat";

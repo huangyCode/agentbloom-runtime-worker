@@ -1,7 +1,7 @@
 /**
  * 插件契约（对外公开 API，改动须升 apiVersion）。
  *
- * 两条泳道，纪律不同，混用是错误：
+ * 两类钩子，纪律不同，混用是错误：
  * - Observer（onEvent）：只读订阅，异步、无序、**失败绝不影响运行**（异常吞掉记日志）。
  *   落库/监控/审计写这条道。
  * - Interceptor（beforeModelCall / beforeToolCall / afterToolCall / shouldStop）：
@@ -31,7 +31,7 @@ export interface RunContext {
   log: (message: string, fields?: Record<string, unknown>) => void;
 }
 
-/** Observer 泳道收到的事件：Pi 循环事件 + ToolBus 执行事件，统一信封。 */
+/** Observer（观察者）收到的事件：Pi 循环事件 + ToolBus 执行事件，统一信封。 */
 export interface RunEvent {
   /** 循环事件为 Pi 原名（message_end / tool_execution_start …）；
    *  ToolBus 事件加前缀 toolbus_（toolbus_retry / toolbus_failure …）。 */

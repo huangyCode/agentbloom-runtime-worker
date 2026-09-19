@@ -1,5 +1,5 @@
 /**
- * PluginHost：两条泳道的执行纪律都在这，插件作者不用自己处理隔离与超时。
+ * PluginHost：观察者/拦截器两类钩子的执行纪律都在这，插件作者不用自己处理隔离与超时。
  * - Observer：异步派发，异常吞掉记日志，绝不影响运行；
  * - Interceptor：按注册序成链，单钩子硬超时 INTERCEPTOR_TIMEOUT_MS；
  *   beforeToolCall 异常/超时 = block（失败必须显式可见）；
@@ -90,7 +90,7 @@ export class PluginRun {
     this.contexts = contexts;
   }
 
-  /** Observer 泳道：fire-and-forget，异常隔离。 */
+  /** Observer（观察者）：fire-and-forget，异常隔离。 */
   dispatchEvent(type: string, payload: unknown): void {
     const ev: RunEvent = { type, payload, ts: Date.now() };
     for (const plugin of this.plugins) {

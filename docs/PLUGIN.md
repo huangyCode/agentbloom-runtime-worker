@@ -4,15 +4,15 @@ runtime 的策略层是开放的：思考定档、上下文裁剪、轮数预算
 （`src/plugin/builtin/`，每个不到 50 行，是最好的示例代码）。你可以用同一套 API
 挂自己的事件处理与状态逻辑。
 
-## 心智模型：两条泳道 + 一排插槽
+## 心智模型：观察者、拦截器与插槽
 
-| 泳道 | 钩子 | 能力 | 纪律 |
+| 类别 | 钩子 | 能力 | 纪律 |
 |---|---|---|---|
 | **Observer** | `onEvent` | 只读订阅全部事件 | 异步、无序、**异常被吞掉记日志，绝不影响运行** |
 | **Interceptor** | `beforeModelCall` / `beforeToolCall` / `afterToolCall` / `shouldStop` | 改写请求、否决工具、裁剪上下文、停止循环 | 按注册序成链、单钩子硬超时（默认 5s，`PLUGIN_INTERCEPTOR_TIMEOUT_MS`）、失败语义见下表 |
 | **插槽** | `setup(api)` | 注册自定义工具执行器、替换技能对象存储 | 进程启动时执行一次 |
 
-**只想看，写 Observer；想要管，写 Interceptor 并接受它的纪律。**
+**只想看，写 Observer（观察者）；想要管，写 Interceptor（拦截器）并接受它的纪律。**
 
 ## 钩子契约
 

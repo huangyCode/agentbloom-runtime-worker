@@ -56,7 +56,7 @@ const server = http.createServer(async (req, res) => {
       const exposeThinking = body.agent?.thinking?.expose === true;
       const { stream, pluginRun } = run(ac.signal);
       for await (const ev of stream) {
-        pluginRun.dispatchEvent(ev.type, ev);   // Observer 泳道,隔离异步,不碰 SSE
+        pluginRun.dispatchEvent(ev.type, ev);   // Observer 观察者钩子,隔离异步,不碰 SSE
         const line = mapEvent(ev, id, model, exposeThinking);
         if (line && !res.destroyed) res.write(line);
       }
