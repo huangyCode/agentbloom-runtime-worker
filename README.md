@@ -18,7 +18,8 @@ model config, tool execution, context trimming, thinking policy are all injected
 - **ToolBus** — unified tool execution with per-call deadline, bounded retry
   (side-effect-free only), idempotency keys for side-effect tools, structured errors
   fed back to the model, and a 32KB result cap. HTTP tools speak one endpoint:
-  `POST /invoke/{name}`.
+  `POST /invoke/{name}` — the wire contract any language can implement in an hour,
+  spec in [docs/TOOL_PROTOCOL.md](./docs/TOOL_PROTOCOL.md).
 - **Lazy skills** — skills ship in the snapshot as a *claim ticket*
   (`objectKey + sha256 + size`); the runtime downloads the skill body from object
   storage only when the model actually calls `read_skill`, verifies the hash, and
@@ -141,7 +142,7 @@ npm test
 当前不注册——**没接通的能力绝不暴露给模型**，避免"未接通"被误认为调用成功。
 
 注册工具和 `read_skill` 都通过统一的 ToolBus 进入循环。HTTP 工具由 ToolBus 调
-`POST /invoke/{name}`（协议见 `examples/tool-server.mjs` 的注释）；`ok:false`
+`POST /invoke/{name}`（**完整线协议与合规自检清单见 [docs/TOOL_PROTOCOL.md](./docs/TOOL_PROTOCOL.md)**，参考实现 `examples/tool-server.mjs`）；`ok:false`
 会以结构化错误反馈模型，模型可据此自愈重试。详细设计见
 [docs/ToolBus一期详细设计.md](./docs/ToolBus一期详细设计.md)。
 
